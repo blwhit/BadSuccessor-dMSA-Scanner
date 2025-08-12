@@ -1,11 +1,16 @@
 # BadSuccessor dMSA Scanner
+<br>
 
 **A PowerShell tool to detect BadSuccessor attack paths in Active Directory**
+
+<br>
 
 ## ⚠️ About BadSuccessor
 
 
 BadSuccessor is a critical privilege escalation vulnerability in Active Directory that allows attackers with dMSA creation or modification rights to impersonate ANY Active Directory user account.
+
+<br>
 
 ### Details:
 - Affects Windows Server 2025 environments only
@@ -13,23 +18,30 @@ BadSuccessor is a critical privilege escalation vulnerability in Active Director
 - Enables takeover and credential theft of ANY AD user account (e.g. Domain Admins)
 - Requires privilege to create/modify dMSA object
 
+<br>
 
 ### BadSuccessor TLDR;
 1. Attacker creates/modifies a dMSA account
-2. Sets two attributes to "link" it to a target user (e.g., Domain Admin)
-3. Authenticates as the dMSA and gains all target user's privileges
+2. Sets two attributes to "link" it to a target/victim user (e.g., Domain Admin)
+3. Authenticates as the dMSA and gains _all target user's privileges_
 
-*Credit to [Akamai Security Research Team](https://www.akamai.com/blog/security-research/abusing-dmsa-for-privilege-escalation-in-active-directory)*
+<br>
+
+###### *Credit to [Akamai Security Research Team](https://www.akamai.com/blog/security-research/abusing-dmsa-for-privilege-escalation-in-active-directory)*
+
+<br>
 
 ## 🔍 What This Scanner Finds
 
 This tool identifies who can exploit BadSuccessor by checking:
 
-- Direct dMSA Permissions: Accounts with explicit rights to create/modify dMSAs
-- Group-Based Permissions: Users who inherit dMSA rights through group membership (including nested groups)
-- OU-Level Creation Rights: Permissions allowing dMSA creation in organizational units
-- Existing dMSA Modification Rights: Write access to current dMSA objects
-- Environment Assessment: Windows Server 2025 domain controller detection
+- **Direct dMSA Permissions**: Accounts with explicit rights to create/modify dMSAs
+- **Group-Based Permissions**: Users who inherit dMSA rights through group membership (including nested groups)
+- **OU-Level Creation Rights**: Permissions allowing dMSA creation in organizational units
+- **Existing dMSA Modification Rights**: Write access to current dMSA objects
+- **Environment Assessment**: Windows Server 2025 domain controller detection
+
+<br>
 
 ## 🚀 Quick Start
 
@@ -46,6 +58,7 @@ This tool identifies who can exploit BadSuccessor by checking:
 # Fast scan (skip groups)
 .\BadSuccessor-dMSA-Scanner.ps1 -SkipGroups
 ```
+<br>
 
 ## 📋 Options
 
@@ -56,6 +69,8 @@ This tool identifies who can exploit BadSuccessor by checking:
 | `-CSV` | Export results to file |
 | `-SkipGroups` | Skip group analysis (faster) |
 | `-h` | Show help |
+
+<br>
 
 ## 📊 Sample Output
 
@@ -89,12 +104,14 @@ Scanning for BadSuccessor attack paths...
 
 [*] Results exported to: BadSuccessor_dMSA_Audit_20250812_143022.csv
 ```
+<br>
 
 ## 🛡️ Requirements
 
 - Active Directory PowerShell module (RSAT)
 - Read access to Active Directory Domain
 
+<br>
 
 ## 🔗 References
 

@@ -2,6 +2,8 @@
 
 **A PowerShell tool to detect BadSuccessor attack paths in Active Directory**
 
+<br>
+
 ## ⚠️ About BadSuccessor
 
 BadSuccessor is a critical privilege escalation vulnerability in Active Directory that allows attackers with dMSA creation or modification rights to impersonate ANY Active Directory user account.

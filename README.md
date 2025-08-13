@@ -126,8 +126,8 @@ Scanning for BadSuccessor attack paths...
 
 ## 🔗 References
 
-- [Akamai BadSuccessor Research](https://www.akamai.com/blog/security-research/abusing-dmsa-for-privilege-escalation-in-active-directory)
-- [Tarlogic Analysis](https://www.tarlogic.com/blog/badsuccessor/)
-- [Unit42 Deep Dive](https://unit42.paloaltonetworks.com/badsuccessor-attack-vector/)
+- [Akamai Research](https://www.akamai.com/blog/security-research/abusing-dmsa-for-privilege-escalation-in-active-directory)
+- [Tarlogic Research](https://www.tarlogic.com/blog/badsuccessor/)
+- [Unit42 Research](https://unit42.paloaltonetworks.com/badsuccessor-attack-vector/)
 
 ---

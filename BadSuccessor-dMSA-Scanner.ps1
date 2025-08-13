@@ -426,7 +426,7 @@ function Process-ObjectACL {
                 }
                 Write-Host "    Permissions: $PermissionDesc" -ForegroundColor White
                 Write-Host "    Scope: $AppliesTo" -ForegroundColor Gray
-                Write-Host "    Exploit Type: $ExploitType" -ForegroundColor Red
+                Write-Host "    Attack Path: $ExploitType" -ForegroundColor Red
 
                 # Add to report
                 $script:Report += [PSCustomObject]@{
@@ -483,11 +483,10 @@ if ($TotalObjects -gt 50) {
 }
 
 # Generate summary report
-Write-Host "`n" -NoNewline
-Write-Host "[X] BADSUCCESSOR VULNERABILITY SUMMARY [X]" -ForegroundColor Red -BackgroundColor Black
+Write-Host "`n`n" -NoNewline
 
 if ($script:Report.Count -gt 0) {
-    Write-Host "`n[!] ATTACK PATHS FOUND: $($script:Report.Count)" -ForegroundColor Red    
+    Write-Host "`n[X] ATTACK PATHS FOUND: $($script:Report.Count)" -ForegroundColor Red    
     $DirectRisks = $script:Report | Where-Object { $_.MatchReason -eq "Direct Permission" }
     $GroupBasedRisks = $script:Report | Where-Object { $_.MatchReason -eq "Group Membership" }
     $ExistingdMSARisks = $script:Report | Where-Object { $_.ObjectType -eq "Existing dMSA" }
@@ -510,7 +509,7 @@ if ($script:Report.Count -gt 0) {
     }
     
 } else {
-    Write-Host "`n[+] No BadSuccessor attack paths found" -ForegroundColor Green
+    Write-Host "`n[+] NO FINDINGS - 0 BadSuccessor attack paths found..." -ForegroundColor Green
 }
 
 # Export results if requested

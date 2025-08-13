@@ -62,9 +62,10 @@ if (-not $User -and -not $All.IsPresent) {
 $ReportFile = "BadSuccessor_dMSA_Audit_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 $script:Report = @()
 $UserGroupCache = @{}
+$HighPrivilegeSIDs = @()
 
 # Required GUIDs
-$dMSA_GUID = "0feb936f-47b3-49f2-9386-1dedc2c23765"  # msDS-DelegatedManagedServiceAccount
+$dMSA_GUID = "0feb936f-47b3-49f2-9386-1dedc2c23765" # msDS-DelegatedManagedServiceAccount 
 $AllChild_GUID = "00000000-0000-0000-0000-000000000000"  # All child objects
 
 # Define dangerous permissions for BadSuccessor exploitation
@@ -92,6 +93,56 @@ try {
     }
 } catch {
     Write-Host "[!] Warning: Could not enumerate domain controllers: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
+# Build list of high-privilege SIDs to filter out (false positives)
+$HighPrivilegeSIDs = @(
+    'S-1-5-18',  # NT AUTHORITY\SYSTEM
+    'S-1-5-9',   # NT AUTHORITY\ENTERPRISE DOMAIN CONTROLLERS
+    'S-1-5-32-544'  # BUILTIN\Administrators
+)
+
+try {
+    # Add domain-specific high privilege groups
+    $DomainSID = (Get-ADDomain).DomainSID.Value
+    $HighPrivilegeSIDs += @(
+        "$DomainSID-512",  # Domain Admins
+        "$DomainSID-519",  # Enterprise Admins (if exists in this domain)
+        "$DomainSID-518"   # Schema Admins
+    )
+    
+    # Try to get Enterprise Admins from root domain if we're in a child domain
+    try {
+        $RootDomain = (Get-ADForest).RootDomain
+        if ($RootDomain -ne (Get-ADDomain).DNSRoot) {
+            $RootDomainSID = (Get-ADDomain -Server $RootDomain).DomainSID.Value
+            $HighPrivilegeSIDs += "$RootDomainSID-519"  # Root domain Enterprise Admins
+        }
+    } catch {
+        Write-Verbose "Could not determine root domain Enterprise Admins SID"
+    }
+    
+    Write-Host "[*] Filtering out $($HighPrivilegeSIDs.Count) known high-privilege principals" -ForegroundColor Gray
+    
+} catch {
+    Write-Host "[!] Warning: Could not build complete high-privilege filter: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
+# Function to check if principal is high-privilege (false positive)
+function Test-HighPrivilegePrincipal {
+    param([string]$PrincipalSID)
+    
+    # Check against known high-privilege SIDs
+    if ($HighPrivilegeSIDs -contains $PrincipalSID) {
+        return $true
+    }
+    
+    # Check for other built-in high privilege SIDs
+    if ($PrincipalSID -match '^S-1-5-32-5(44|48|49|51|52)$') {  # Built-in admin groups
+        return $true
+    }
+    
+    return $false
 }
 
 # Function to get user group memberships with caching
@@ -208,8 +259,8 @@ function Test-BadSuccessorRelevantPermission {
         ($ObjectTypeGuid.ToUpper() -eq $dMSA_GUID.ToUpper()) -or
         # All child objects (includes dMSA)
         ($ObjectTypeGuid -eq $AllChild_GUID) -or
-        # CreateChild without object type restriction
-        (($ACE.ActiveDirectoryRights -band [System.DirectoryServices.ActiveDirectoryRights]::CreateChild) -and [string]::IsNullOrEmpty($ObjectTypeGuid))
+        # CreateChild without object type restriction (applies to all child types)
+        (($ACE.ActiveDirectoryRights -band [System.DirectoryServices.ActiveDirectoryRights]::CreateChild) -and ($ACE.ObjectType -eq [System.Guid]::Empty))
     )
     
     return $RelevantForCreation, $DangerousRightsPresent, $null
@@ -254,12 +305,7 @@ try {
     # Look for existing dMSA objects
     $dMSAObjects = @()
     try {
-        $dMSAObjects = Get-ADObject -Filter { objectClass -eq "msDS-DelegatedManagedServiceAccount" } -Properties DistinguishedName -ErrorAction Stop
-        if ($null -eq $dMSAObjects) { 
-            $dMSAObjects = @() 
-        } elseif ($dMSAObjects -isnot [Array]) {
-            $dMSAObjects = @($dMSAObjects)
-        }
+        $dMSAObjects = @(Get-ADObject -Filter { objectClass -eq "msDS-DelegatedManagedServiceAccount" } -Properties DistinguishedName -ErrorAction Stop)
         Write-Host "[*] Found $($dMSAObjects.Count) existing dMSA objects" -ForegroundColor Gray
     } catch [Microsoft.ActiveDirectory.Management.ADException] {
         if ($_.Exception.Message -like "*does not exist*" -or $_.Exception.Message -like "*unknown object class*") {
@@ -323,6 +369,12 @@ function Process-ObjectACL {
                 continue
             }
 
+            # Filter out high-privilege principals (false positives)
+            if (Test-HighPrivilegePrincipal -PrincipalSID $ACE_SID) {
+                Write-Verbose "Skipping high-privilege principal: $($ACE.IdentityReference.Value)"
+                continue
+            }
+
             $IsMatch = $false
             $MatchReason = ""
             $VulnerableUser = ""
@@ -340,6 +392,11 @@ function Process-ObjectACL {
             } elseif ($User -and -not $SkipGroups) {
                 $GroupMatch = Test-UserGroupPermissions -UserSID $TargetPrincipal -ACE_SID $ACE_SID
                 if ($GroupMatch) {
+                    # Additional check: don't report if user is member of high-privilege group
+                    if (Test-HighPrivilegePrincipal -PrincipalSID $GroupMatch.SID.Value) {
+                        Write-Verbose "Skipping - user is member of high-privilege group: $($GroupMatch.Name)"
+                        continue
+                    }
                     $IsMatch = $true
                     $MatchReason = "Group Membership"
                     $VulnerableUser = $TargetFriendly
@@ -369,7 +426,7 @@ function Process-ObjectACL {
                 }
                 Write-Host "    Permissions: $PermissionDesc" -ForegroundColor White
                 Write-Host "    Scope: $AppliesTo" -ForegroundColor Gray
-                Write-Host "    Attack Path: $ExploitType" -ForegroundColor Red
+                Write-Host "    Exploit Type: $ExploitType" -ForegroundColor Red
 
                 # Add to report
                 $script:Report += [PSCustomObject]@{
@@ -430,7 +487,8 @@ Write-Host "`n" -NoNewline
 Write-Host "[X] BADSUCCESSOR VULNERABILITY SUMMARY [X]" -ForegroundColor Red -BackgroundColor Black
 
 if ($script:Report.Count -gt 0) {
-    Write-Host "`n[!] ATTACK PATHS FOUND: $($script:Report.Count)" -ForegroundColor Red
+    Write-Host "`n[!] ACTIONABLE ATTACK PATHS FOUND: $($script:Report.Count)" -ForegroundColor Red
+    Write-Host "[*] (High-privilege principals filtered out)" -ForegroundColor Gray
     
     $DirectRisks = $script:Report | Where-Object { $_.MatchReason -eq "Direct Permission" }
     $GroupBasedRisks = $script:Report | Where-Object { $_.MatchReason -eq "Group Membership" }
@@ -448,7 +506,7 @@ if ($script:Report.Count -gt 0) {
     
     # Show unique principals with exploit capability
     $UniquePrincipals = $script:Report | Select-Object -ExpandProperty Principal -Unique | Sort-Object
-    Write-Host "`n[*] PRINCIPALS WITH BADSUCCESSOR CAPABILITY:" -ForegroundColor Cyan
+    Write-Host "`n[*] NON-PRIVILEGED PRINCIPALS WITH BADSUCCESSOR CAPABILITY:" -ForegroundColor Cyan
     foreach ($Principal in $UniquePrincipals) {
         Write-Host "    - $Principal" -ForegroundColor White
     }

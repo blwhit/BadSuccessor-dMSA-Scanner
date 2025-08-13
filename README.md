@@ -98,9 +98,8 @@ Scanning for BadSuccessor attack paths...
     Scope: dMSA objects only
     Exploit Type: Create new dMSA
 
-[X] BADSUCCESSOR VULNERABILITY SUMMARY [X]
 
-[!] ATTACK PATHS FOUND: 3
+[X] ATTACK PATHS FOUND: 3
     Direct Permissions: 2
     Group Memberships: 1
     Existing dMSA Risks: 0

@@ -487,9 +487,7 @@ Write-Host "`n" -NoNewline
 Write-Host "[X] BADSUCCESSOR VULNERABILITY SUMMARY [X]" -ForegroundColor Red -BackgroundColor Black
 
 if ($script:Report.Count -gt 0) {
-    Write-Host "`n[!] ACTIONABLE ATTACK PATHS FOUND: $($script:Report.Count)" -ForegroundColor Red
-    Write-Host "[*] (High-privilege principals filtered out)" -ForegroundColor Gray
-    
+    Write-Host "`n[!] ATTACK PATHS FOUND: $($script:Report.Count)" -ForegroundColor Red    
     $DirectRisks = $script:Report | Where-Object { $_.MatchReason -eq "Direct Permission" }
     $GroupBasedRisks = $script:Report | Where-Object { $_.MatchReason -eq "Group Membership" }
     $ExistingdMSARisks = $script:Report | Where-Object { $_.ObjectType -eq "Existing dMSA" }
@@ -506,7 +504,7 @@ if ($script:Report.Count -gt 0) {
     
     # Show unique principals with exploit capability
     $UniquePrincipals = $script:Report | Select-Object -ExpandProperty Principal -Unique | Sort-Object
-    Write-Host "`n[*] NON-PRIVILEGED PRINCIPALS WITH BADSUCCESSOR CAPABILITY:" -ForegroundColor Cyan
+    Write-Host "`n[*] PRINCIPALS WITH BADSUCCESSOR ATTACK PATHS:" -ForegroundColor Cyan
     foreach ($Principal in $UniquePrincipals) {
         Write-Host "    - $Principal" -ForegroundColor White
     }

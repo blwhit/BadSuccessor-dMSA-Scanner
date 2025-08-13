@@ -97,7 +97,12 @@ Scanning for BadSuccessor attack paths...
     Permissions: CreateChild
     Scope: dMSA objects only
     Exploit Type: Create new dMSA
-
+.
+.
+.
+.
+.
+---------------
 
 [X] ATTACK PATHS FOUND: 3
     Direct Permissions: 2

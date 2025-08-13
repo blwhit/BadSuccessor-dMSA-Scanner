@@ -1,6 +1,6 @@
 # BadSuccessor dMSA Scanner
 
-**A PowerShell tool to detect BadSuccessor attack paths in Active Directory**
+**A PowerShell tool to detect ALL BadSuccessor attack paths in Active Directory _(including nested/group privileges)_.**
 
 ## ⚠️ About BadSuccessor
 

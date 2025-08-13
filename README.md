@@ -30,7 +30,7 @@ This tool identifies who can exploit BadSuccessor by checking:
 - **Existing dMSA Modification Rights**: Write access to current dMSA objects
 - **Environment Assessment**: Windows Server 2025 domain controller detection
 
-  ###### _NOTE: High Privilege Accounts are automatically filtered (e.g. Domain Admins, Enterprise Admins, Domain Controllers, etc...)._
+  ###### _NOTE: Highly privileged pricipals are automatically filtered (e.g. Domain Admins, Enterprise Admins, Domain Controllers, etc...)._
 
 ## 🚀 Quick Start
 

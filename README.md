@@ -10,7 +10,7 @@ BadSuccessor is a critical privilege escalation vulnerability in Active Director
 - Affects Windows Server 2025 environments only
 - Currently has no available patch
 - Enables takeover and credential theft of ANY AD user account (e.g. Domain Admins)
-- Requires privilege to create/modify dMSA object
+- Attack requires privilege to create/modify dMSA object
 
 ### BadSuccessor TLDR:
 1. Attacker creates/modifies a dMSA account
@@ -29,6 +29,8 @@ This tool identifies who can exploit BadSuccessor by checking:
 - **Container-Level Creation Rights**: Permissions allowing dMSA creation in containers
 - **Existing dMSA Modification Rights**: Write access to current dMSA objects
 - **Environment Assessment**: Windows Server 2025 domain controller detection
+
+  ###### _NOTE: This scanner does NOT filter built-in privileged groups/users... this may produce false positives, but is by design, to return ALL potential attack paths._
 
 ## 🚀 Quick Start
 
